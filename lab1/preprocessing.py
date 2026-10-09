@@ -52,14 +52,3 @@ def process_features(X_train: pd.DataFrame, X_test: pd.DataFrame) -> tuple[pd.Da
     X_test = pd.concat([X_test.drop(columns=ohe_columns), df_test_encoded], axis=1)
 
     return X_train, X_test
-
-
-def get_processed_data(test_size: float | int = 0.2, random_state: int = 42) \
-        -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-
-    X, y = get_raw_data()
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=y
-    )
-    X_train, X_test = process_features(X_train, X_test)
-    return X_train, X_test, y_train, y_test

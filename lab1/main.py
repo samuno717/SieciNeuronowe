@@ -35,6 +35,7 @@ def main():
             results[name][metric] = []
 
     for train_idx, test_idx in rskf.split(X, y):
+        global X_train, X_test, y_train, y_test
         X_train, X_test = process_features(X.iloc[train_idx], X.iloc[test_idx])
         y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
 
