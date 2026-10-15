@@ -1,0 +1,18 @@
+experiment:
+  n_splits: 5
+  n_repeats: 10
+  seed: 42
+
+knn:
+  n_neighbors: 5
+
+logreg:
+  learning_rate: 0.1
+  epochs: 800
+  weights: "zeros"
+
+convergence_study:
+  learning_rates: [0.001, 0.01, 0.1, 0.5, 2.0, 10.0, 30.0, 100.0]
+  weights: ["zeros", "random", "ones", "uniform", "extreme"]
+  epochs: 1000
+  tol: 0.00001
