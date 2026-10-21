@@ -16,3 +16,7 @@ convergence_study:
   weights: ["zeros", "random", "ones", "uniform", "extreme"]
   epochs: 1000
   tol: 0.00001
+
+backpropagation:
+  weights_std: 0.01
+  learning_rate: 0.01
