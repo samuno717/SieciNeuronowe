@@ -1,6 +1,5 @@
 #%%
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
@@ -11,13 +10,14 @@ from lab1.preprocessing import get_raw_data, process_features
 def main():
     X, y = get_raw_data()
 
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train_raw, X_test_raw, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
-    X_train, X_test = process_features(X_train, X_test)
+    X_train_norm, X_test_norm = process_features(X_train_raw, X_test_raw, scale=True)
+    X_train_unnorm, X_test_unnorm = process_features(X_train_raw, X_test_raw, scale=False)
 
-    input_dim = X_train.shape[1]
+    input_dim = X_train_norm.shape[1]
     epochs = 60000
     lr = 0.01
 
@@ -25,7 +25,7 @@ def main():
 
     # Różna liczba neuronów
     print("Szerokości warstwy...")
-    configs_width = [4, 20, 64]
+    configs_width = [4, 20, 64, 128]
     losses_width = {}
 
     plt.figure(figsize=(9, 5), dpi=300)
@@ -40,8 +40,8 @@ def main():
             ],
             lr=lr
         )
-        train_l, _ = model.fit(X_train, y_train, epochs=epochs)
-        y_pred = model.predict(X_test)
+        train_l, _ = model.fit(X_train_norm, y_train, epochs=epochs)
+        y_pred = model.predict(X_test_norm)
         losses_width[neurons] = train_l
 
         summary.append({
@@ -78,8 +78,8 @@ def main():
         np.random.seed(42)
         model = MLP(layers=layers, lr=lr)
 
-        train_l, _ = model.fit(X_train, y_train, epochs=epochs)
-        y_pred = model.predict(X_test)
+        train_l, _ = model.fit(X_train_norm, y_train, epochs=epochs)
+        y_pred = model.predict(X_test_norm)
 
         summary.append({
             "Eksperyment": "Głębokość sieci",
@@ -101,29 +101,36 @@ def main():
     plt.savefig("exp_layers.svg", bbox_inches="tight")
     plt.close()
 
-    # Train Loss vs Test Loss
-    print("Train vs Test Loss...")
-    np.random.seed(42)
-    overfit_model = MLP(
-        layers=[Dense(input_dim, 64), ReLU(), Dense(64, 1)],
-        lr=lr
-    )
-    train_l, test_l = overfit_model.fit(X_train, y_train, X_val=X_test, y_val=y_test, epochs=epochs)
+    # Normalizacja danych
+    print("Normalizacja danych...")
+    datasets_norm = {
+        "Dane znormalizowane": (X_train_norm, X_test_norm),
+        "Dane nieznormalizowane": (X_train_unnorm, X_test_unnorm),
+    }
 
     plt.figure(figsize=(9, 5), dpi=300)
-    plt.plot(train_l, label="Train Loss", color="#1f77b4")
-    plt.plot(test_l, label="Test Loss", color="#d62728", linestyle="--")
+
+    for name, (X_tr, X_te) in datasets_norm.items():
+        np.random.seed(42)
+        model = MLP(
+            layers=[
+                Dense(X_tr.shape[1], 20),
+                ReLU(),
+                Dense(20, 1)
+            ],
+            lr=lr
+        )
+        train_l, _ = model.fit(X_tr, y_train, epochs=epochs)
+        plt.plot(train_l, label=name)
+
     plt.xlabel("Epoki")
     plt.ylabel("Loss")
-    plt.title("Analiza przeuczenia (64 neurony)")
+    plt.title("Wpływ normalizacji danych na proces uczenia")
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.legend()
     plt.tight_layout()
-    plt.savefig("exp_overfitting.svg", bbox_inches="tight")
+    plt.savefig("exp_normalization.svg", bbox_inches="tight")
     plt.close()
-
-    summary_df = pd.DataFrame(summary)
-    print("\n" + summary_df.round(4).to_string(index=False))
 
 if __name__ == "__main__":
     main()

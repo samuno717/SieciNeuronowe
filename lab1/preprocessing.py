@@ -24,7 +24,7 @@ def get_raw_data() -> tuple[DataFrame, pd.Series]:
     return X, y
 
 
-def process_features(X_train: pd.DataFrame, X_test: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def process_features(X_train: pd.DataFrame, X_test: pd.DataFrame, scale: bool = True) -> tuple[pd.DataFrame, pd.DataFrame]:
     X_train = X_train.copy()
     X_test = X_test.copy()
 
@@ -34,10 +34,10 @@ def process_features(X_train: pd.DataFrame, X_test: pd.DataFrame) -> tuple[pd.Da
         X_train[col] = X_train[col].fillna(mode_val)
         X_test[col] = X_test[col].fillna(mode_val)
 
-    # standaryzacja
-    scaler = StandardScaler()
-    X_train[continuous_cols] = scaler.fit_transform(X_train[continuous_cols])
-    X_test[continuous_cols] = scaler.transform(X_test[continuous_cols])
+    if scale:
+        scaler = StandardScaler()
+        X_train[continuous_cols] = scaler.fit_transform(X_train[continuous_cols])
+        X_test[continuous_cols] = scaler.transform(X_test[continuous_cols])
 
     # one-hot encoding
     encoder = OneHotEncoder(drop='first', sparse_output=False)
