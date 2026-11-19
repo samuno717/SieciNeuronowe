@@ -302,7 +302,7 @@ def main():
     logger.info("Tabela metryk (Train / Val):\n" + df_metrics.to_string(index=False))
 
     LAB4_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    excel_path = LAB4_ARTIFACT_DIR / "wyniki.xlsx"
+    excel_path = LAB4_ARTIFACT_DIR / "wyniki_replikacja.xlsx"
     with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
         df_metrics.to_excel(writer, sheet_name="Metryki Train Val", index=False)
         df_levels.to_excel(writer, sheet_name="Poziomy Zgodnosci", index=False)

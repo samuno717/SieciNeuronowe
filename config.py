@@ -3,5 +3,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 DATA_DIR = PROJECT_ROOT / "heart+disease"
+
 LAB4_DIR = PROJECT_ROOT / "lab4"
 LAB4_ARTIFACT_DIR = PROJECT_ROOT / "lab4" / "artifacts"
+
+LAB5_DIR = PROJECT_ROOT / "lab5"
+LAB5_ARTIFACT_DIR = PROJECT_ROOT / "lab5" / "artifacts"

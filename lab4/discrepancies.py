@@ -194,6 +194,8 @@ def step3_bce_saturation(X_train: np.ndarray, y_train: np.ndarray) -> dict:
     y_pred_0 = np_m.forward(X_train)
     np_m.backward(y_pred_0, y_train)
     dw0_np = np_layers[0].dW.copy()
+    # gradient po logitach w MLP.py: (y_pred - y) / N
+    zero_grad_samples_np = int(np.sum(np.abs((y_pred_0 - y_train) / y_train.shape[0]) < 1e-12))
 
     np.random.seed(42)
     np_layers_run = [
@@ -251,30 +253,31 @@ def step3_bce_saturation(X_train: np.ndarray, y_train: np.ndarray) -> dict:
         losses_torch[mode_name] = l_hist
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.8), dpi=300)
-    ax1.plot(loss_np, color="tab:green", linewidth=3.5, alpha=0.4, label="NumPy MLP")
-    ax1.plot(losses_torch["Sigmoid + nn.BCELoss"], color="tab:red", linestyle="-.", linewidth=1.8, label="PyTorch: Sigmoid + BCELoss")
-    ax1.plot(losses_torch["nn.BCEWithLogitsLoss"], color="tab:green", linestyle="--", linewidth=1.5, label="PyTorch: BCEWithLogitsLoss")
+    ax1.plot(loss_np, color="tab:green", linewidth=3.5, alpha=0.4, label="NumPy MLP: dL/dz = (y_pred - y)/N")
+    ax1.plot(losses_torch["Sigmoid + nn.BCELoss"], color="tab:red", linestyle="-.", linewidth=1.8, label="PyTorch: Sigmoid + nn.BCELoss()")
+    ax1.plot(losses_torch["nn.BCEWithLogitsLoss"], color="tab:green", linestyle="--", linewidth=1.5, label="PyTorch: nn.BCEWithLogitsLoss()")
     ax1.set_xlabel("Epoka")
-    ax1.set_ylabel("Loss")
-    ax1.set_title("Przebieg treningu dla zepsutej inicjalizacji N(0, 5)")
+    ax1.set_ylabel("Wartość funkcji straty (Loss)")
+    ax1.set_title("Eksperyment 2 - Inicjalizacja N(0, 5)")
     ax1.grid(True, linestyle="--", alpha=0.5)
     ax1.legend(fontsize=8.5)
 
     n_total = X_train.shape[0]
     bars = ax2.bar(
-        ["NumPy MLP", "PyTorch: Sigmoid + BCELoss", "PyTorch: BCEWithLogitsLoss"],
-        [0, zero_grad_samples_naive, zero_grad_samples_good],
+        ["NumPy MLP\n(analityczny)", "PyTorch:\nSigmoid + BCELoss", "PyTorch:\nBCEWithLogitsLoss"],
+        [zero_grad_samples_np, zero_grad_samples_naive, zero_grad_samples_good],
         color=["tab:blue", "tab:red", "tab:green"],
         width=0.5,
         alpha=0.85,
     )
     ax2.set_ylabel(f"Liczba próbek z zerowym gradientem (na {n_total})")
-    ax2.set_title("Liczba próbek z wyzerowanym gradientem")
+    ax2.set_title("Zjawisko zerowania gradientu przy N(0, 5)")
     ax2.set_ylim(0, n_total * 1.15)
     ax2.grid(True, axis="y", linestyle="--", alpha=0.5)
     for bar in bars:
         h = int(bar.get_height())
-        ax2.text(bar.get_x() + bar.get_width() / 2, h + 5, f"{h} / {n_total} ({100*h/n_total:.1f}%)", ha="center", va="bottom", fontsize=9)
+        ax2.text(bar.get_x() + bar.get_width() / 2, h + 5, f"{h} / {n_total}\n({100*h/n_total:.1f}%)",
+                 ha="center", va="bottom", fontsize=9, fontweight="bold")
 
     plt.tight_layout()
     save_plot("proof_step3_bce_saturation")

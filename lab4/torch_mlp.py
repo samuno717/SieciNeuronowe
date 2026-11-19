@@ -1,4 +1,3 @@
-import shutil
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score
 
-from config import LAB4_DIR, LAB4_ARTIFACT_DIR
+from config import LAB4_ARTIFACT_DIR
 from lab1.preprocessing import get_raw_data, process_features
 from lab3.MLP import MLP as NumpyMLP
 
@@ -16,10 +15,8 @@ DEVICE = torch.device("cpu")
 
 def save_plot(filename_stem: str):
     LAB4_ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
-    local_path = LAB4_DIR / f"{filename_stem}.svg"
-    plt.savefig(local_path, bbox_inches="tight", dpi=300)
-    art_path = LAB4_ARTIFACT_DIR / f"{filename_stem}.svg"
-    shutil.copy2(local_path, art_path)
+    plt.savefig(LAB4_ARTIFACT_DIR / f"{filename_stem}.svg", bbox_inches="tight", dpi=300)
+    plt.savefig(LAB4_ARTIFACT_DIR / f"{filename_stem}.png", bbox_inches="tight", dpi=200)
     plt.close()
 
 
