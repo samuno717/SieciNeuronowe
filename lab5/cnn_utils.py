@@ -10,14 +10,13 @@ from config import PROJECT_ROOT, LAB5_ARTIFACT_DIR
 
 DATA_DIR = PROJECT_ROOT / "data"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MLP_BASELINE_ACC = 56.36  # najlepsza dokładność MLP z lab4 (lab4/artifacts/wyniki_cifar10.xlsx)
+MLP_BASELINE_ACC = 56.36
 
 CIFAR_MEAN = (0.4914, 0.4822, 0.4465)
 CIFAR_STD = (0.2470, 0.2435, 0.2616)
 
 
 def set_deterministic():
-    # Bez tego identyczne konfiguracje z tym samym ziarnem dawały na GPU wyniki różniące się o ~0.7 pkt %
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
@@ -30,12 +29,6 @@ def save_plot(filename_stem: str):
 
 
 class TensorBatches:
-    """Prosty odpowiednik DataLoadera dla danych trzymanych w całości na GPU.
-
-    CIFAR-10 (50k obrazów 3x32x32) mieści się w pamięci karty, więc normalizacja wykonywana jest raz,
-    a nie przy każdym przejściu, co wielokrotnie skraca czas epoki.
-    """
-
     def __init__(self, X: torch.Tensor, y: torch.Tensor, batch_size: int, shuffle: bool):
         self.X, self.y = X, y
         self.batch_size = batch_size
@@ -57,20 +50,15 @@ class TensorBatches:
 
 def _load_split(train: bool) -> tuple[torch.Tensor, torch.Tensor]:
     ds = datasets.CIFAR10(root=DATA_DIR, train=train, download=True)
-    X = torch.tensor(ds.data, dtype=torch.float32).permute(0, 3, 1, 2).div_(255.0)  # (N, 3, 32, 32), jak ToTensor()
+    X = torch.tensor(ds.data, dtype=torch.float32).permute(0, 3, 1, 2).div_(255.0)  # (N, 3, 32, 32)
     mean = torch.tensor(CIFAR_MEAN).view(1, 3, 1, 1)
     std = torch.tensor(CIFAR_STD).view(1, 3, 1, 1)
-    X = (X - mean) / std  # jak transforms.Normalize
+    X = (X - mean) / std
     y = torch.tensor(ds.targets, dtype=torch.long)
     return X.to(DEVICE), y.to(DEVICE)
 
 
 def get_cifar10_loaders(batch_size: int = 128) -> tuple[TensorBatches, TensorBatches, TensorBatches]:
-    """Zwraca: loader treningowy (tasowany), loader treningowy do ewaluacji i loader walidacyjny.
-
-    Jako zbiór walidacyjny używany jest oficjalny podział testowy CIFAR-10 (10 000 obrazów),
-    tak samo jak przy baseline MLP z ćwiczenia 4 - dzięki temu wyniki są bezpośrednio porównywalne.
-    """
     X_tr, y_tr = _load_split(train=True)
     X_val, y_val = _load_split(train=False)
     train_loader = TensorBatches(X_tr, y_tr, batch_size, shuffle=True)
@@ -122,7 +110,6 @@ class FlexibleCNN(nn.Module):
 
 @torch.no_grad()
 def evaluate(model: nn.Module, loader: TensorBatches, loss_fn: nn.Module) -> tuple[float, float]:
-    """Strata i dokładność [%] liczone zawsze w trybie eval (Dropout wyłączony, BatchNorm na statystykach globalnych)."""
     model.eval()
     loss_sum, correct = 0.0, 0
     for X, y in loader:
@@ -145,8 +132,7 @@ def train_and_evaluate(
     weight_decay: float = 0.0,
 ) -> tuple[dict, dict, list[dict]]:
     model = model.to(DEVICE)
-    # Materializacja LazyLinear przed utworzeniem optymalizatora. Tryb eval, żeby przejście próbne
-    # nie aktualizowało statystyk running_mean/running_var w BatchNorm.
+
     model.eval()
     with torch.no_grad():
         model(torch.zeros(1, 3, 32, 32, device=DEVICE))
@@ -173,7 +159,7 @@ def train_and_evaluate(
             optimizer.step()
             optimizer.zero_grad()
 
-        # Metryki po epoce: oba zbiory w trybie eval, na zamrożonych wagach
+        # metryki po epoce, w trybie eval
         tr_loss, tr_acc = evaluate(model, train_eval_loader, loss_fn)
         val_loss, val_acc = evaluate(model, val_loader, loss_fn)
 
@@ -253,7 +239,7 @@ def plot_experiment(results_dict: dict[str, dict], title_prefix: str, filename_s
     ax1.set_title(f"{title_prefix}: Funkcja straty (Train vs Val)")
     ax2.set_ylabel("Accuracy [%]")
     ax2.set_title(f"{title_prefix}: Dokładność klasyfikacji")
-    # Legendy pod wykresami, żeby nie zasłaniały krzywych
+
     for ax in (ax1, ax2):
         ax.legend(fontsize=7.5, ncol=2, loc="upper center", bbox_to_anchor=(0.5, -0.13), frameon=False)
 

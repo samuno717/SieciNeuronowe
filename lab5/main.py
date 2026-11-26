@@ -21,7 +21,7 @@ def main():
     t_total = time.perf_counter()
     set_deterministic()
     gpu_name = torch.cuda.get_device_name(0) if DEVICE.type == "cuda" else "CPU"
-    logger.info(f"Start Ćwiczenia 5 (cz. 1). Urządzenie: {DEVICE} ({gpu_name})")
+    logger.info(f"Urządzenie: {DEVICE} ({gpu_name})")
 
     train_loader, train_eval_loader, val_loader = get_cifar10_loaders(batch_size=128)
 
@@ -31,8 +31,7 @@ def main():
 
     def run(exp_group: str, name: str, channels: list[int], kernel: int = 3, use_bn: bool = False,
             dropout_p: float = 0.0, use_adamw: bool = False, wd: float = 0.0) -> dict:
-        # Identyczna konfiguracja przy tym samym ziarnie i deterministycznym cuDNN daje identyczny wynik,
-        # więc powtarzające się warianty (np. 3 warstwy / filtr 3x3 / CNN Base) liczone są tylko raz.
+
         key = (tuple(channels), kernel, use_bn, dropout_p, use_adamw, wd)
         if key not in cache:
             torch.manual_seed(SEED)
@@ -48,7 +47,6 @@ def main():
         all_epochs.extend({**r, "Eksperyment": exp_group, "Wariant": name} for r in ep_rows)
         return hist
 
-    # 1. Liczba kanałów wyjściowych (2 warstwy konwolucyjne, filtr 3x3)
     logger.info("=== EKSPERYMENT 1: Liczba kanałów wyjściowych ===")
     exp1 = {
         "Mała (8 -> 16)": [8, 16],
@@ -58,7 +56,6 @@ def main():
     h1 = {name: run("1. Liczba kanałów", name, ch) for name, ch in exp1.items()}
     plot_experiment(h1, "Eksperyment 1 (Kanały)", "exp1_channels")
 
-    # 2. Liczba warstw konwolucyjnych (filtr 3x3)
     logger.info("=== EKSPERYMENT 2: Liczba warstw konwolucyjnych ===")
     exp2 = {
         "1 warstwa (32)": [32],
@@ -68,13 +65,11 @@ def main():
     h2 = {name: run("2. Liczba warstw", name, ch) for name, ch in exp2.items()}
     plot_experiment(h2, "Eksperyment 2 (Liczba warstw)", "exp2_layers")
 
-    # 3. Rozmiar filtra (3 warstwy: 32->64->128)
     logger.info("=== EKSPERYMENT 3: Rozmiar filtra (kernel_size) ===")
     exp3 = {"Filtr 3x3": 3, "Filtr 5x5": 5, "Filtr 7x7": 7}
     h3 = {name: run("3. Rozmiar filtra", name, [32, 64, 128], kernel=k) for name, k in exp3.items()}
     plot_experiment(h3, "Eksperyment 3 (Rozmiar filtra)", "exp3_kernels")
 
-    # 4. Regularyzacja (3 warstwy 32->64->128, filtr 3x3)
     logger.info("=== EKSPERYMENT 4: Techniki regularyzacji ===")
     base = [32, 64, 128]
     g4 = "4. Regularyzacja"
